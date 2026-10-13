@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Enlace RF · Antenas, Difracción y Fresnel</title>
+<meta name="description" content="Simulador de balance de enlace RF: biblioteca de antenas, varios obstáculos, difracción, reflexión en suelo, lluvia, gases, ruido y exposición.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e0c; --panel:#101713; --panel2:#0d1310; --line:#1f2c25;
+  --text:#d7e5dc; --muted:#7f968a;
+  --phos:#5af0a0; --amber:#ffb347; --red:#ff6b5e; --cyan:#5cc8ff;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px;background-position:-1px -1px}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(10,14,12,.2),var(--bg) 75%);pointer-events:none;z-index:-1}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
+header{padding:28px 0 20px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--phos)}
+h1{margin:4px 0 2px;font-size:clamp(22px,4vw,32px);font-weight:600;letter-spacing:-.01em}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.hbtns{display:flex;gap:8px}
+button{font-family:var(--mono);font-size:12px;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer}
+button:hover{border-color:var(--phos);color:var(--phos)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--phos);outline-offset:2px}
+button.wide{width:100%;margin-top:10px}
+.layout{display:grid;grid-template-columns:390px minmax(0,1fr);gap:20px;margin-top:20px;align-items:start}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.side{position:static!important;max-height:none!important}}
+.side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:2px;display:flex;flex-direction:column;gap:10px}
+details.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+details.sec>summary{cursor:pointer;list-style:none;padding:12px 16px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"+";color:var(--phos)}
+details.sec[open]>summary::after{content:"−"}
+details.sec[open]>summary{color:var(--text);border-bottom:1px solid var(--line)}
+details.sec .body{padding:14px 16px 6px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;margin-bottom:4px}
+.field .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.field .row label{margin:0}
+.field .val{font-family:var(--mono);color:var(--phos);font-size:12px;text-align:right}
+.field.chk label{display:flex;gap:8px;align-items:center;cursor:pointer}
+.field small{color:var(--muted)}
+input[type=number],input[type=text],select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 9px}
+select{font-family:var(--sans)}
+textarea{resize:vertical;font-size:12px}
+input[type=range]{width:100%;accent-color:var(--phos);margin:8px 0 0}
+input[type=checkbox]{accent-color:var(--phos);width:16px;height:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.presets button{padding:3px 7px;font-size:11px}
+.note{font-size:12px;color:var(--muted);margin:5px 0 0}
+.label-sm{font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin:6px 0 8px}
+.mats{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.mats .field label{font-size:12px}
+table.obs{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+table.obs th{font-weight:500;color:var(--muted);text-align:left;padding:2px 3px;font-size:11px}
+table.obs td{padding:2px 3px;border:0}
+table.obs input{padding:4px 5px;font-size:12px}
+table.obs td:first-child{width:34%}
+table.obs button{padding:3px 6px}
+.muted{color:var(--muted)}
+.right{display:flex;flex-direction:column;gap:20px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+.card h2{margin:0 0 14px;font-size:12px;font-family:var(--mono);font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px}
+.metric .lbl{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.metric .big{font-family:var(--mono);font-size:21px;font-weight:600;margin-top:4px;word-break:break-word}
+.metric .small{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.c-phos{color:var(--phos)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}.c-cyan{color:var(--cyan)}
+.status{padding:10px 14px;border-radius:8px;border:1px solid;font-size:14px;display:flex;gap:10px;align-items:center}
+.status .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.status.ok{border-color:rgba(90,240,160,.4);background:rgba(90,240,160,.07)}.status.ok .dot{background:var(--phos)}
+.status.warn{border-color:rgba(255,179,71,.4);background:rgba(255,179,71,.07)}.status.warn .dot{background:var(--amber)}
+.status.bad{border-color:rgba(255,107,94,.45);background:rgba(255,107,94,.08)}.status.bad .dot{background:var(--red)}
+ul.warns{margin:0;padding:10px 14px 10px 32px;border:1px solid rgba(255,179,71,.3);border-radius:8px;background:rgba(255,179,71,.05);font-size:13px;color:#e8cfa3}
+ul.warns li{margin:3px 0}
+canvas{width:100%;height:320px;display:block;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+table.t{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+table.t th{font-weight:500;color:var(--muted);font-size:11px;text-align:right;padding:4px;text-transform:uppercase;letter-spacing:.06em}
+table.t th:first-child{text-align:left}
+table.t td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.t td.k{font-family:var(--sans);text-align:left;white-space:normal}
+table.t tr.total td{border-top:2px solid var(--phos);border-bottom:0;font-weight:600;color:var(--phos)}
+table.t tr.pos td:last-child{color:var(--phos)} table.t tr.neg td:last-child{color:var(--red)}
+table.t tr.sel td{background:rgba(255,179,71,.08)}
+.okc{color:var(--phos)}.badc{color:var(--red)}
+.scroll{overflow-x:auto}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+dl{margin:0}
+dl>div{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+dt{color:var(--muted)}
+dd{margin:0;font-family:var(--mono);text-align:right}
+.card p{margin:0 0 8px;font-size:14px}
+.assump{font-size:13px;color:var(--muted);padding-left:18px;margin:0}
+.assump li{margin:4px 0}
+footer{margin-top:28px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+@media print{
+  body{background:#fff;color:#000}body::before{display:none}
+  .no-print,.side,.hbtns{display:none!important}
+  .layout{grid-template-columns:1fr}
+  .card,.metric{background:#fff;border-color:#bbb}
+  .c-phos,.okc,table.t tr.total td{color:#064}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="kicker">Telecomunicaciones · Radiofrecuencia</div>
+    <h1>Calculadora de Enlace RF</h1>
+    <p class="sub">Antenas, balance de enlace, difracción con varios obstáculos, atmósfera y ruido</p>
+  </div>
+  <div class="hbtns no-print">
+    <button type="button" id="btnCopy">Copiar resumen</button>
+    <button type="button" id="btnPrint">Imprimir / PDF</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side no-print" aria-label="Parámetros del enlace"><div id="form"></div></aside>
+
+  <main class="right">
+    <div class="metrics" id="metrics" aria-live="polite"></div>
+    <div class="status" id="status" role="status"><span class="dot"></span><span id="statusText"></span></div>
+    <ul class="warns" id="warns"></ul>
+
+    <section class="card">
+      <h2>Perfil del enlace, terreno y zona de Fresnel</h2>
+      <canvas id="cvProfile" aria-label="Perfil del enlace con terreno, obstáculos y zona de Fresnel"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--cyan)"></i>Línea de vista</span>
+        <span><i style="background:var(--amber)"></i>1.ª zona de Fresnel</span>
+        <span><i style="background:var(--phos)"></i>60 % de r<sub>1</sub></span>
+        <span><i style="background:var(--red)"></i>Obstáculos</span>
+      </div>
+      <p class="note">La escala vertical está en metros y es mucho más fina que la horizontal, así que el relieve se ve exagerado.</p>
+    </section>
+
+    <section class="card">
+      <h2>Potencia recibida según la distancia</h2>
+      <canvas id="cvSweep" aria-label="Potencia recibida en función de la distancia"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--phos)"></i>Modelo completo</span>
+        <span><i style="background:var(--cyan)"></i>Espacio libre ideal</span>
+        <span><i style="background:var(--red)"></i>Sensibilidad</span>
+      </div>
+      <p class="note">Al variar la distancia se mantienen constantes las pérdidas por obstáculos, cables, polarización y materiales. Cambian la pérdida básica, la lluvia, los gases y la reflexión en suelo. El alcance no incluye el horizonte: comparalo con la línea violeta.</p>
+    </section>
+
+    <div class="cols">
+      <section class="card"><h2>Balance de enlace</h2><div class="scroll"><table class="t" id="budget"></table></div></section>
+      <section class="card"><h2>Parámetros derivados</h2><dl id="derived"></dl></section>
+    </div>
+
+    <section class="card" id="obsCard">
+      <h2>Análisis de obstáculos</h2>
+      <div class="scroll"><table class="t" id="obsTable"></table></div>
+      <div style="height:14px"></div>
+      <div class="scroll"><table class="t" id="methTable"></table></div>
+      <p class="note">Con un solo obstáculo los cuatro métodos coinciden. Con varios, Epstein–Peterson y Deygout suman pérdidas y Bullington las agrupa en un único filo equivalente. Si los resultados difieren mucho, la incertidumbre es alta.</p>
+    </section>
+
+    <div class="cols">
+      <section class="card"><h2>Disponibilidad con desvanecimiento Rayleigh</h2><div class="scroll"><table class="t" id="avail"></table></div>
+        <p class="note" style="margin-top:10px">Es el peor caso, sin componente directa dominante. Un enlace con visión directa suele comportarse mejor.</p></section>
+      <section class="card"><h2>Exposición a radiofrecuencia</h2><div id="expo"></div></section>
+    </div>
+
+    <section class="card">
+      <h2>Qué modela y qué no</h2>
+      <ul class="assump">
+        <li>Modelos aproximados: difracción ITU-R P.526, gases P.676 (forma simplificada, válida hasta ~100 GHz), lluvia P.838 con factor de distancia de P.530, vegetación de Weissberger y reflexión en suelo con coeficientes de Fresnel.</li>
+        <li>La curvatura terrestre se trata como un perfil de obstáculos con factor k, no como difracción por tierra esférica.</li>
+        <li>No incluye multitrayecto ni desvanecimiento selectivo de microondas, conductos troposféricos, dispersión troposférica, interferencias de otros canales ni pérdidas por desadaptación (ROE).</li>
+        <li>La ganancia de las antenas fijas del catálogo es típica y no varía con la frecuencia. El error de puntería usa una aproximación gaussiana del lóbulo principal. Para antenas omnidireccionales no se modela la inclinación vertical.</li>
+        <li>Pérdidas de cable y materiales son valores típicos orientativos (los materiales, a 2,4 GHz y creciendo con la frecuencia). Confirmá con la hoja de datos del fabricante.</li>
+        <li>Herramienta educativa. Para un diseño real usá software de planificación con datos de terreno y mediciones.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<footer>Calculadora de enlace RF · herramienta educativa</footer>
+</div>
+
+<noscript><p style="padding:16px">Esta calculadora necesita JavaScript.</p></noscript>
+<script>
+/* Motor de cálculo RF: funciones puras, sin acceso al DOM. */
+const Engine = (function () {
+  const C = 3e8, PI = Math.PI, L10 = Math.log10;
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+  /* ---------- Catálogos ---------- */
+  const ANT = {
+    iso:    { name: 'Isotrópica (referencia teórica)', G: 0, hpbw: null, pol: 'V' },
+    dipole: { name: 'Dipolo λ/2', G: 2.15, hpbw: null, pol: 'V' },
+    mono:   { name: 'Monopolo λ/4 con plano de tierra', G: 3, hpbw: null, pol: 'V' },
+    duck:   { name: 'Omni flexible "rubber duck" (2 dBi)', G: 2, hpbw: null, pol: 'V' },
+    omni8:  { name: 'Omni colineal 8 dBi', G: 8, hpbw: null, pol: 'V' },
+    omni12: { name: 'Omni colineal 12 dBi', G: 12, hpbw: null, pol: 'V' },
+    yagi3:  { name: 'Yagi 3 elementos (7 dBi)', G: 7, hpbw: 65, pol: 'H' },
+    yagi5:  { name: 'Yagi 5 elementos (10 dBi)', G: 10, hpbw: 50, pol: 'H' },
+    yagi10: { name: 'Yagi 10 elementos (13 dBi)', G: 13, hpbw: 40, pol: 'H' },
+    logp:   { name: 'Log-periódica (7 dBi)', G: 7, hpbw: 65, pol: 'H' },
+    patch:  { name: 'Parche / panel plano (8 dBi)', G: 8, hpbw: 70, pol: 'V' },
+    panel:  { name: 'Panel direccional (14 dBi)', G: 14, hpbw: 30, pol: 'V' },
+    sec90:  { name: 'Sector 90° (17 dBi)', G: 17, hpbw: 90, pol: 'V' },
+    sec120: { name: 'Sector 120° (15 dBi)', G: 15, hpbw: 120, pol: 'V' },
+    helix:  { name: 'Helicoidal axial, polarización circular (12 dBi)', G: 12, hpbw: 45, pol: 'RC' },
+    horn15: { name: 'Bocina piramidal (15 dBi)', G: 15, hpbw: 30, pol: 'V' },
+    horn20: { name: 'Bocina piramidal (20 dBi)', G: 20, hpbw: 17, pol: 'V' },
+    dish:   { name: 'Parabólica (se calcula con diámetro y eficiencia)', dish: true, pol: 'V' },
+    custom: { name: 'Personalizada', custom: true, pol: 'V' }
+  };
+
+  // Atenuación aproximada a 900 MHz en dB/100 m; se escala con √f
+  const CABLES = {
+    none:   { name: 'Sin cable / despreciable', a: 0 },
+    rg58:   { name: 'RG-58', a: 55 },
+    rg213:  { name: 'RG-213', a: 26 },
+    lmr400: { name: 'LMR-400 o equivalente', a: 12.8 },
+    lmr600: { name: 'LMR-600 o equivalente', a: 8.2 },
+    hlx12:  { name: 'Heliax 1/2"', a: 7 },
+    hlx78:  { name: 'Heliax 7/8"', a: 3.9 },
+    hlx158: { name: 'Heliax 1-5/8"', a: 2.1 },
+    custom: { name: 'Personalizado (dB/100 m a la frecuencia del enlace)', custom: true }
+  };
+
+  const MATERIALS = [
+    ['drywall', 'Tabique de yeso (durlock)', 3],
+    ['door', 'Puerta de madera', 4],
+    ['glass', 'Ventana de vidrio simple', 3],
+    ['lowe', 'Vidrio con película metalizada', 10],
+    ['brick', 'Pared de ladrillo', 8],
+    ['concrete', 'Pared de hormigón', 12],
+    ['slab', 'Losa de hormigón armado', 20],
+    ['metal', 'Chapa metálica / ascensor', 25]
+  ];
+
+  const GROUND = {
+    poor:  { name: 'Suelo seco / pobre (εr 4, σ 0,001 S/m)', er: 4, s: 0.001 },
+    avg:   { name: 'Suelo medio (εr 15, σ 0,005 S/m)', er: 15, s: 0.005 },
+    good:  { name: 'Suelo húmedo / bueno (εr 25, σ 0,02 S/m)', er: 25, s: 0.02 },
+    fresh: { name: 'Agua dulce (εr 81, σ 0,01 S/m)', er: 81, s: 0.01 },
+    sea:   { name: 'Agua de mar (εr 81, σ 5 S/m)', er: 81, s: 5 }
+  };
+
+  // ITU-R P.838: f(GHz), kH, αH, kV, αV
+  const RAIN = [
+    [1, 0.0000259, 0.9691, 0.0000308, 0.8592], [2, 0.0000847, 1.0664, 0.0000998, 0.9490],
+    [4, 0.0001071, 1.6009, 0.0002461, 1.2476], [6, 0.0007056, 1.5900, 0.0004878, 1.5728],
+    [7, 0.001915, 1.4810, 0.001425, 1.4745], [8, 0.004115, 1.3905, 0.003450, 1.3797],
+    [10, 0.01217, 1.2571, 0.01129, 1.2156], [12, 0.02386, 1.1825, 0.02455, 1.1216],
+    [15, 0.04481, 1.1233, 0.05008, 1.0440], [20, 0.09164, 1.0568, 0.09611, 0.9847],
+    [25, 0.1571, 0.9991, 0.1533, 0.9491], [30, 0.2403, 0.9485, 0.2291, 0.9129],
+    [35, 0.3374, 0.9047, 0.3224, 0.8761], [40, 0.4431, 0.8673, 0.4274, 0.8421],
+    [45, 0.5521, 0.8355, 0.5375, 0.8123], [50, 0.6600, 0.8084, 0.6472, 0.7871],
+    [60, 0.8606, 0.7656, 0.8515, 0.7486], [70, 1.0315, 0.7345, 1.0253, 0.7215],
+    [80, 1.1704, 0.7115, 1.1668, 0.7021], [90, 1.2807, 0.6944, 1.2795, 0.6876],
+    [100, 1.3671, 0.6815, 1.3680, 0.6765]
+  ];
+
+  /* ---------- Antenas, polarización, cables ---------- */
+  function antennaParams(a, f) {
+    const sp = ANT[a.type] || ANT.custom;
+    if (sp.dish) {
+      const lam = C / (f * 1e6), D = Math.max(0.01, a.D), eta = clamp(a.eff / 100, 0.01, 1);
+      return { G: 10 * L10(eta * Math.pow(PI * D / lam, 2)), hpbw: 70 * lam / D };
+    }
+    if (sp.custom) return { G: a.unit === 'dBd' ? a.G + 2.15 : a.G, hpbw: a.hpbw > 0 ? a.hpbw : null };
+    return { G: sp.G, hpbw: sp.hpbw };
+  }
+  function pointingLoss(deg, hpbw) {
+    if (!hpbw || !(deg > 0)) return 0;
+    return Math.min(30, 12 * Math.pow(deg / hpbw, 2));
+  }
+  function polLoss(a, b, extraDeg) {
+    const lin = p => p === 'V' || p === 'H';
+    if (lin(a) && lin(b)) {
+      const ang = ((a === b ? 0 : 90) + (extraDeg || 0)) * PI / 180, c = Math.abs(Math.cos(ang));
+      return c < 1e-6 ? 25 : Math.min(25, -20 * L10(c));
+    }
+    if (!lin(a) && !lin(b)) return a === b ? 0 : 25;
+    return 3;
+  }
+  function cableLoss(side, f, connLoss) {
+    const c = CABLES[side.cable] || CABLES.none;
+    const per100 = c.custom ? side.cableDb : c.a * Math.sqrt(f / 900);
+    return Math.max(0, per100) * Math.max(0, side.cableLen) / 100 + Math.max(0, side.conn) * Math.max(0, connLoss);
+  }
+  function materialLoss(m) {
+    return MATERIALS.reduce((s, [id, , db]) => s + Math.max(0, (m && m[id]) || 0) * db, 0);
+  }
+
+  /* ---------- Atmósfera, lluvia, vegetación ---------- */
+  function gasSpecific(fG, rho) {
+    const f = fG;
+    const o = x => x <= 57
+      ? (7.19e-3 + 6.09 / (x * x + 0.227) + 4.81 / ((x - 57) * (x - 57) + 1.50)) * x * x * 1e-3
+      : (3.79e-7 * x + 0.265 / ((x - 63) * (x - 63) + 1.59) + 0.028 / ((x - 118) * (x - 118) + 1.47)) * (x + 198) * (x + 198) * 1e-3;
+    let go;
+    if (f <= 57 || f >= 63) go = o(f);
+    else { const a = o(57), b = o(63); go = a + (b - a) * (f - 57) / 6; }
+    const gw = (0.050 + 0.0021 * rho + 3.6 / ((f - 22.2) * (f - 22.2) + 8.5) + 10.6 / ((f - 183.3) * (f - 183.3) + 9.0) + 8.9 / ((f - 325.4) * (f - 325.4) + 26.3)) * f * f * rho * 1e-4;
+    return { go, gw, total: go + Math.max(0, gw) };
+  }
+  function rainCoef(fG) {
+    const f = clamp(fG, 1, 100);
+    let i = 0;
+    while (i < RAIN.length - 2 && f > RAIN[i + 1][0]) i++;
+    const a = RAIN[i], b = RAIN[i + 1];
+    const t = (Math.log(f) - Math.log(a[0])) / (Math.log(b[0]) - Math.log(a[0]));
+    const lk = (x, y) => Math.exp(Math.log(x) + t * (Math.log(y) - Math.log(x)));
+    const la = (x, y) => x + t * (y - x);
+    return { kH: lk(a[1], b[1]), aH: la(a[2], b[2]), kV: lk(a[3], b[3]), aV: la(a[4], b[4]) };
+  }
+  function rainSpecific(fG, R, pol) {
+    if (!(R > 0) || fG < 1) return { gamma: 0, k: 0, alpha: 0 };
+    const q = rainCoef(fG), tau = pol === 'H' ? 0 : pol === 'V' ? 90 : 45;
+    const c = Math.cos(2 * tau * PI / 180);
+    const k = (q.kH + q.kV + (q.kH - q.kV) * c) / 2;
+    const al = (q.kH * q.aH + q.kV * q.aV + (q.kH * q.aH - q.kV * q.aV) * c) / (2 * k);
+    return { gamma: k * Math.pow(R, al), k, alpha: al };
+  }
+  function vegLoss(fMHz, depth, season) {
+    if (!(depth > 0)) return 0;
+    const fG = fMHz / 1000, d = Math.min(depth, 400);
+    const L = d <= 14 ? 0.45 * Math.pow(fG, 0.284) * d : 1.33 * Math.pow(fG, 0.284) * Math.pow(d, 0.588);
+    return L * clamp(season, 0, 1);
+  }
+
+  /* ---------- Reflexión en suelo (2 rayos) ---------- */
+  const cadd = (a, b) => ({ re: a.re + b.re, im: a.im + b.im });
+  const csub = (a, b) => ({ re: a.re - b.re, im: a.im - b.im });
+  const cmul = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+  const cmulr = (a, k) => ({ re: a.re * k, im: a.im * k });
+  const cdiv = (a, b) => { const d = b.re * b.re + b.im * b.im; return { re: (a.re * b.re + a.im * b.im) / d, im: (a.im * b.re - a.re * b.im) / d }; };
+  const csqrt = z => { const r = Math.hypot(z.re, z.im); return { re: Math.sqrt((r + z.re) / 2), im: (z.im < 0 ? -1 : 1) * Math.sqrt(Math.max(0, (r - z.re) / 2)) }; };
+
+  function twoRayGain(ht, hr, dm, fMHz, g, pol) {
+    const lam = C / (fMHz * 1e6);
+    ht = Math.max(0.1, ht); hr = Math.max(0.1, hr);
+    const dl = Math.hypot(dm, ht - hr), dr = Math.hypot(dm, ht + hr);
+    const sinp = (ht + hr) / dr, cosp = dm / dr;
+    const epsc = { re: g.er, im: -60 * lam * g.s };
+    const S = csqrt({ re: epsc.re - cosp * cosp, im: epsc.im });
+    const es = cmulr(epsc, sinp);
+    const gv = cdiv(csub(es, S), cadd(es, S));
+    const sp = { re: sinp, im: 0 };
+    const gh = cdiv(csub(sp, S), cadd(sp, S));
+    const ph = 2 * PI * (dr - dl) / lam, e = { re: Math.cos(ph), im: -Math.sin(ph) }, k = dl / dr;
+    const fac = G => { const t = cmulr(cmul(G, e), k); const re = 1 + t.re, im = t.im; return re * re + im * im; };
+    const p = pol === 'V' ? fac(gv) : pol === 'H' ? fac(gh) : (fac(gv) + fac(gh)) / 2;
+    return Math.max(-60, 10 * L10(Math.max(p, 1e-6)));
+  }
+
+  /* ---------- Difracción ---------- */
+  function J(v) { return v > -0.78 ? 6.9 + 20 * L10(Math.sqrt((v - 0.1) * (v - 0.1) + 1) + v - 0.1) : 0; }
+  function Tround(h, d1, d2, R, lam) {
+    if (!(R > 0) || !(h > 0)) return 0;
+    const q = PI * R / lam;
+    const m = R * ((d1 + d2) / (d1 * d2)) / Math.cbrt(q);
+    const n = h * Math.pow(q, 2 / 3) / R;
+    let T = 7.2 * m - 2 * m * m + 3.6 * m * m * m - 0.8 * m * m * m * m;
+    if (m * n > 4) T += -6 - 20 * L10(m * n);
+    return Math.max(0, T);
+  }
+  function edge(A, B, E, lam) {
+    const d1 = E.x - A.x, d2 = B.x - E.x, L = B.x - A.x;
+    const yl = A.y + (B.y - A.y) * d1 / L, h = E.y - yl;
+    const v = h * Math.sqrt(2 * (d1 + d2) / (lam * d1 * d2));
+    const j = J(v), t = Tround(h, d1, d2, E.R || 0, lam);
+    return { h, d1, d2, v, J: j, T: t, L: j + t, r1: Math.sqrt(lam * d1 * d2 / (d1 + d2)) };
+  }
+  function deygout(A, B, edges, lam) {
+    const inside = edges.filter(e => e.x > A.x + 1e-6 && e.x < B.x - 1e-6);
+    if (!inside.length) return 0;
+    let best = null, br = null;
+    for (const e of inside) { const r = edge(A, B, e, lam); if (!br || r.v > br.v) { br = r; best = e; } }
+    if (br.v <= -0.78) return 0;
+    return br.L + deygout(A, best, inside, lam) + deygout(best, B, inside, lam);
+  }
+  function epeterson(Tx, Rx, edges, lam) {
+    const rel = edges.filter(e => edge(Tx, Rx, e, lam).v > -0.78);
+    if (!rel.length) return 0;
+    const pts = [Tx, ...rel, Rx];
+    let sum = 0;
+    for (let i = 1; i < pts.length - 1; i++) sum += edge(pts[i - 1], pts[i + 1], pts[i], lam).L;
+    return sum;
+  }
+  function bullington(Tx, Rx, edges, lam, fallback) {
+    if (!edges.length) return 0;
+    const r = Rx.x - Tx.x;
+    let st = -Infinity, sr = -Infinity;
+    for (const e of edges) {
+      st = Math.max(st, (e.y - Tx.y) / (e.x - Tx.x));
+      sr = Math.max(sr, (e.y - Rx.y) / (Rx.x - e.x));
+    }
+    const den = st + sr;
+    if (Math.abs(den) < 1e-12) return fallback;
+    const xs = (Rx.y - Tx.y + sr * r) / den;
+    if (!(xs > 0 && xs < r)) return fallback;
+    return edge(Tx, Rx, { x: xs, y: Tx.y + st * xs, R: 0 }, lam).L;
+  }
+  function peakEdges(Tx, Rx, edges) {
+    const r = Rx.x - Tx.x;
+    const ex = edges.map(e => e.y - (Tx.y + (Rx.y - Tx.y) * e.x / r));
+    return edges.filter((e, i) => e.manual || ((i === 0 || ex[i] >= ex[i - 1]) && (i === edges.length - 1 || ex[i] >= ex[i + 1])));
+  }
+
+  /* ---------- Perfil de terreno ---------- */
+  function parseTerrain(txt) {
+    const out = [];
+    String(txt || '').split(/\r?\n/).forEach(line => {
+      const l = line.trim();
+      if (!l || /^[#/]/.test(l)) return;
+      let t;
+      if (/[;\t]/.test(l)) t = l.split(/[;\t]+/).map(s => s.trim().replace(',', '.'));
+      else if (/\s/.test(l)) t = l.split(/\s+/).map(s => s.replace(',', '.'));
+      else t = l.split(',');
+      const km = parseFloat(t[0]), h = parseFloat(t[1]);
+      if (Number.isFinite(km) && Number.isFinite(h)) out.push({ km, h });
+    });
+    out.sort((a, b) => a.km - b.km);
+    return out.slice(0, 3000);
+  }
+
+  /* ---------- Ruido y exposición ---------- */
+  function exposure(eirpW, fMHz) {
+    let sg, so;
+    if (fMHz < 400) { sg = 2; so = 10; }
+    else if (fMHz < 2000) { sg = fMHz / 200; so = fMHz / 40; }
+    else { sg = 10; so = 50; }
+    return { sg, so, dg: Math.sqrt(eirpW / (4 * PI * sg)), dop: Math.sqrt(eirpW / (4 * PI * so)) };
+  }
+  function bandName(f) { return f < 30 ? 'HF' : f < 300 ? 'VHF' : f < 3000 ? 'UHF' : f < 30000 ? 'SHF' : 'EHF'; }
+  function availability(marginDb) { return Math.exp(-Math.pow(10, -marginDb / 10)); }
+  function fadeMarginFor(avail) { return -10 * L10(-Math.log(avail)); }
+
+  /* ---------- Cálculo principal ---------- */
+  function compute(S) {
+    const f = clamp(S.f, 10, 100000), lam = C / (f * 1e6), fG = f / 1000;
+    const rKm = Math.max(0.01, S.r), r = rKm * 1000;
+    const txA = antennaParams(S.tx, f), rxA = antennaParams(S.rx, f);
+    const cTx = cableLoss(S.tx, f, S.connLoss), cRx = cableLoss(S.rx, f, S.connLoss);
+    const pTx = pointingLoss(S.tx.point, txA.hpbw), pRx = pointingLoss(S.rx.point, rxA.hpbw);
+    const polL = polLoss(S.tx.pol, S.rx.pol, S.polExtra);
+
+    const gasSp = gasSpecific(fG, S.rho);
+    const rainSp = rainSpecific(fG, S.rain, S.tx.pol);
+    const d0 = 35 * Math.exp(-0.015 * Math.min(Math.max(S.rain, 0), 100));
+    const rainAt = dKm => (S.rain > 0 ? rainSp.gamma * dKm / (1 + dKm / d0) : 0);
+    const gasAt = dKm => (S.gas ? gasSp.total * dKm : 0);
+    const lbfAt = dKm => 20 * L10(4 * PI * dKm * 1000 / lam);
+    const groundGainAt = dKm => (S.ground === 'two' ? twoRayGain(S.tx.h, S.rx.h, dKm * 1000, f, GROUND[S.gType] || GROUND.avg, S.tx.pol) : 0);
+
+    const veg = vegLoss(f, S.vegDepth, S.vegSeason);
+    const mat = materialLoss(S.mat);
+    const Ae = 10 * L10(Math.max(1, S.ae)) + (S.extraDb || 0);
+
+    /* geometría */
+    const Tx = { x: 0, y: S.zTx + S.tx.h }, Rx = { x: r, y: S.zRx + S.rx.h };
+    const k = Math.max(0.3, S.k);
+    const bulge = x => (S.earth ? (x / 1000) * ((r - x) / 1000) / (12.74 * k) : 0);
+    const terr = parseTerrain(S.terrainTxt).filter(p => p.km * 1000 > 0 && p.km * 1000 < r);
+    const gz = [{ x: 0, y: S.zTx }, ...terr.map(p => ({ x: p.km * 1000, y: p.h })), { x: r, y: S.zRx }];
+    const baseAt = x => {
+      for (let i = 0; i < gz.length - 1; i++) {
+        if (x >= gz[i].x && x <= gz[i + 1].x) {
+          const dx = gz[i + 1].x - gz[i].x;
+          return dx > 0 ? gz[i].y + (gz[i + 1].y - gz[i].y) * (x - gz[i].x) / dx : gz[i].y;
+        }
+      }
+      return gz[gz.length - 1].y;
+    };
+    const edges = [];
+    (S.obstacles || []).forEach((o, i) => {
+      const x = o.pos * 1000;
+      if (x > 0 && x < r) edges.push({ x, y: o.top + bulge(x), R: o.R || 0, name: o.name || ('Obstáculo ' + (i + 1)), manual: true, idx: i });
+    });
+    terr.forEach(p => edges.push({ x: p.km * 1000, y: p.h + bulge(p.km * 1000), R: 0, terrain: true, name: 'Terreno' }));
+    if (S.earth && !terr.length) {
+      for (let i = 1; i <= 40; i++) { const x = r * i / 41; edges.push({ x, y: baseAt(x) + bulge(x), R: 0, ground: true, name: 'Curvatura terrestre' }); }
+    }
+    edges.sort((a, b) => a.x - b.x);
+
+    const per = edges.map(e => edge(Tx, Rx, e, lam));
+    let crit = null;
+    per.forEach((p, i) => { if (!crit || p.v > crit.p.v) crit = { p, e: edges[i] }; });
+    const peaks = peakEdges(Tx, Rx, edges);
+    const mDom = crit ? crit.p.L : 0;
+    const methods = {
+      knife: mDom,
+      bull: bullington(Tx, Rx, edges, lam, mDom),
+      ep: epeterson(Tx, Rx, peaks, lam),
+      dey: deygout(Tx, Rx, peaks, lam)
+    };
+    const diffr = edges.length ? (methods[S.method] != null ? methods[S.method] : methods.dey) : 0;
+
+    /* balance */
+    const Lfixed = diffr + veg + mat + Ae + polL + pTx + pRx + cTx + cRx - txA.G - rxA.G;
+    const lbf = lbfAt(rKm), gas = gasAt(rKm), rain = rainAt(rKm), gGain = groundGainAt(rKm);
+    const Lt = Lfixed + lbf + gas + rain - gGain;
+    const Pr = S.Pt - Lt;
+    const PrW = Math.pow(10, Pr / 10) / 1000;
+
+    /* receptor */
+    const bwHz = Math.max(1e-3, S.B) * 1e6;
+    const N = -174 + 10 * L10(bwHz) + S.NF + (S.noiseRise || 0);
+    const sens = S.sensMode === 'auto' ? N + S.snrMin : S.sens;
+    const snr = Pr - N;
+    const margin = Pr - sens;
+    const cap = Math.max(0, bwHz * Math.log2(1 + Math.pow(10, snr / 10)) / 1e6);
+    const avail = availability(margin);
+
+    /* emisión y exposición */
+    const eirpDbm = S.Pt - cTx + txA.G;
+    const eirpW = Math.pow(10, eirpDbm / 10) / 1000;
+    const exp = exposure(eirpW, f);
+
+    /* Fresnel y alturas */
+    const r1mid = 0.5 * Math.sqrt(lam * r);
+    let towerReq = null;
+    edges.forEach(e => {
+      const r1e = Math.sqrt(lam * e.x * (r - e.x) / r);
+      const need = e.y + 0.6 * r1e - (S.zTx + (S.zRx - S.zTx) * e.x / r);
+      if (towerReq === null || need > towerReq) towerReq = need;
+    });
+
+    /* barrido en distancia */
+    const prAt = dKm => S.Pt - Lfixed - (lbfAt(dKm) + gasAt(dKm) + rainAt(dKm) - groundGainAt(dKm));
+    const fsAt = dKm => S.Pt + txA.G + rxA.G - lbfAt(dKm);
+    let maxRange = null;
+    const N0 = 500, dMin = 0.05, dMax = 300;
+    for (let i = 0; i <= N0; i++) {
+      const d = dMin * Math.pow(dMax / dMin, i / N0);
+      if (prAt(d) >= sens) maxRange = d;
+    }
+
+    /* horizonte radioeléctrico (km) con factor k */
+    const horizonKm = 3.57 * Math.sqrt(k) * (Math.sqrt(Math.max(0, S.tx.h)) + Math.sqrt(Math.max(0, S.rx.h)));
+
+    /* perfil para dibujar */
+    const profile = [];
+    for (let i = 0; i <= 120; i++) { const x = r * i / 120; profile.push({ x, y: baseAt(x) + bulge(x) }); }
+
+    return {
+      f, lam, rKm, r, band: bandName(f), txA, rxA, cTx, cRx, pTx, pRx, polL,
+      gasSp, rainSp, d0, rainEff: rainSp.gamma > 0 ? rKm / (1 + rKm / d0) : 0,
+      veg, mat, Ae, lbf, lbf2: 32.44 + 20 * L10(f) + 20 * L10(rKm), gas, rain, gGain,
+      diffr, methods, edges, per, crit, peaks, Tx, Rx, profile,
+      Lfixed, Lt, Pr, PrW, N, sens, snr, margin, cap, avail,
+      eirpDbm, eirpW, exp, r1mid, towerReq, prAt, fsAt, maxRange, horizonKm,
+      phiIso: Math.pow(10, S.Pt / 10) / 1000 / (4 * PI * r * r),
+      seqRx: lam * lam * Math.pow(10, rxA.G / 10) / (4 * PI)
+    };
+  }
+
+  return { compute, ANT, CABLES, MATERIALS, GROUND, J, Tround, edge, deygout, epeterson, bullington, twoRayGain, gasSpecific, rainSpecific, rainCoef, vegLoss, polLoss, pointingLoss, antennaParams, cableLoss, parseTerrain, exposure, availability, fadeMarginFor, bandName };
+})();
+
+/* Estado por defecto (reproduce el ejemplo del post) y escenarios predefinidos. */
+const antDefaults = () => ({
+  type: 'custom', G: 10, unit: 'dBi', hpbw: 0, D: 1.2, eff: 55, point: 0,
+  pol: 'V', h: 30, cable: 'none', cableLen: 0, cableDb: 20, conn: 0
+});
+const S0 = {
+  f: 300, Pt: 50, r: 10,
+  tx: antDefaults(), rx: antDefaults(),
+  connLoss: 0.25, polExtra: 0,
+  earth: false, k: 1.33, ground: 'off', gType: 'avg',
+  zTx: 0, zRx: 0, method: 'dey', obstacles: [], terrainTxt: '',
+  gas: false, rain: 0, rho: 7.5, vegDepth: 0, vegSeason: 1,
+  mat: { drywall: 0, door: 0, glass: 0, lowe: 0, brick: 0, concrete: 0, slab: 0, metal: 0 },
+  ae: 4, extraDb: 0,
+  B: 20, NF: 6, noiseRise: 0, sensMode: 'manual', sens: -90, snrMin: 10
+};
+
+const PRESETS = [
+  { id: 'post', name: 'Ejemplo del post · 300 MHz, 10 km, espacio libre', s: {} },
+  {
+    id: 'wifi', name: 'Wi-Fi punto a punto 5,8 GHz · 5 km con parábolas',
+    s: {
+      f: 5800, Pt: 24, r: 5, gas: true, earth: true, ground: 'two', gType: 'avg', ae: 1, sens: -82,
+      tx: { type: 'dish', D: 0.6, eff: 55, point: 0.5, h: 25, cable: 'lmr400', cableLen: 3, conn: 2 },
+      rx: { type: 'dish', D: 0.6, eff: 55, point: 0.5, h: 25, cable: 'lmr400', cableLen: 3, conn: 2 },
+      obstacles: [{ name: 'Edificio', pos: 2, top: 20, R: 0 }]
+    }
+  },
+  {
+    id: 'mw18', name: 'Radioenlace 18 GHz · 12 km con lluvia fuerte',
+    s: {
+      f: 18000, Pt: 20, r: 12, gas: true, earth: true, ae: 1, rain: 25, sens: -75,
+      tx: { type: 'dish', D: 0.6, eff: 60, h: 40 }, rx: { type: 'dish', D: 0.6, eff: 60, h: 40 }
+    }
+  },
+  {
+    id: 'vhf', name: 'VHF 150 MHz · 15 km con loma y vegetación',
+    s: {
+      f: 150, Pt: 44, r: 15, gas: true, earth: true, ground: 'two', gType: 'avg', ae: 1,
+      vegDepth: 30, vegSeason: 1, sensMode: 'auto', B: 0.0125, NF: 6, noiseRise: 6, snrMin: 12,
+      tx: { type: 'mono', pol: 'V', h: 20 }, rx: { type: 'mono', pol: 'V', h: 2 },
+      obstacles: [{ name: 'Loma', pos: 7, top: 45, R: 200 }]
+    }
+  },
+  {
+    id: 'lora', name: 'LoRa 868 MHz · 3 km urbano con paredes',
+    s: {
+      f: 868, Pt: 14, r: 3, gas: true, ground: 'two', gType: 'poor', ae: 1,
+      mat: { concrete: 2 }, sensMode: 'auto', B: 0.125, NF: 6, noiseRise: 6, snrMin: -15,
+      tx: { type: 'duck', pol: 'V', h: 2 }, rx: { type: 'omni8', pol: 'V', h: 15 }
+    }
+  }
+];
+
+function deepMerge(base, over) {
+  const out = Array.isArray(base) ? base.slice() : Object.assign({}, base);
+  for (const k of Object.keys(over || {})) {
+    const v = over[k];
+    if (v && typeof v === 'object' && !Array.isArray(v) && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) out[k] = deepMerge(base[k], v);
+    else out[k] = Array.isArray(v) ? v.map(x => Object.assign({}, x)) : v;
+  }
+  return out;
+}
+const clone = o => JSON.parse(JSON.stringify(o));
+function presetState(id) {
+  const p = PRESETS.find(x => x.id === id) || PRESETS[0];
+  return deepMerge(clone(S0), p.s);
+}
+
+/* Interfaz: formulario, render de resultados y gráficos. */
+const $ = id => document.getElementById(id);
+const get = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+const set = (o, p, v) => { const ks = p.split('.'), l = ks.pop(); ks.reduce((a, k) => a[k], o)[l] = v; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fx = (x, d = 2) => (x < 0 ? '−' : '') + Math.abs(x).toFixed(d);
+const sg = (x, d = 2) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d);
+function fmtPower(w) {
+  for (const [s, n] of [[1e3, 'kW'], [1, 'W'], [1e-3, 'mW'], [1e-6, 'µW'], [1e-9, 'nW'], [1e-12, 'pW']]) if (w >= s * 0.9995) return (w / s).toPrecision(3) + ' ' + n;
+  return (w / 1e-15).toPrecision(3) + ' fW';
+}
+const fmtKm = km => (km < 1 ? (km * 1000).toFixed(0) + ' m' : km.toFixed(km < 10 ? 2 : 1) + ' km');
+const fmtF = f => (f >= 1000 ? (f / 1000).toFixed(f % 1000 ? 3 : 0).replace(/\.?0+$/, '') + ' GHz' : f + ' MHz');
+
+let S = clone(S0), lastR = null;
+
+/* ---------- Formulario ---------- */
+const sel = o => Object.entries(o).map(([k, v]) => [k, v.name]);
+function F(label, key, o = {}) {
+  const id = 'k_' + key.replace(/\./g, '_');
+  const vis = o.vis ? ` data-vis="${o.vis}"` : '';
+  const hint = o.hint ? `<p class="note">${o.hint}</p>` : '';
+  if (o.chk) return `<div class="field chk"${vis}><label><input type="checkbox" id="${id}" data-k="${key}"> ${label}</label>${hint}</div>`;
+  let ctl;
+  if (o.sel) ctl = `<select id="${id}" data-k="${key}"${o.num ? ' data-num="1"' : ''}>${o.sel.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+  else if (o.area) ctl = `<textarea id="${id}" data-k="${key}" rows="${o.rows || 4}" placeholder="${o.ph || ''}" spellcheck="false"></textarea>`;
+  else ctl = `<input type="number" id="${id}" data-k="${key}" step="${o.step || 'any'}"${o.min != null ? ` min="${o.min}"` : ''}>`;
+  return `<div class="field"${vis}><label for="${id}">${label}</label>${ctl}${hint}</div>`;
+}
+const two = (a, b) => `<div class="two">${a}${b}</div>`;
+const sec = (title, body, open = true) => `<details class="sec"${open ? ' open' : ''}><summary>${title}</summary><div class="body">${body}</div></details>`;
+const POL = [['V', 'Vertical'], ['H', 'Horizontal'], ['RC', 'Circular derecha'], ['LC', 'Circular izquierda']];
+
+function antBlock(p) {
+  return F('Tipo de antena', `${p}.type`, { sel: sel(Engine.ANT) }) +
+    `<p class="note" id="${p}Info"></p>` +
+    two(F('Ganancia', `${p}.G`, { vis: `${p}.type=custom` }), F('Unidad', `${p}.unit`, { sel: [['dBi', 'dBi'], ['dBd', 'dBd']], vis: `${p}.type=custom` })) +
+    F('Ancho de haz a −3 dB (°, 0 = omni)', `${p}.hpbw`, { vis: `${p}.type=custom` }) +
+    two(F('Diámetro (m)', `${p}.D`, { vis: `${p}.type=dish` }), F('Eficiencia (%)', `${p}.eff`, { vis: `${p}.type=dish` })) +
+    two(F('Error de puntería (°)', `${p}.point`, { min: 0 }), F('Polarización', `${p}.pol`, { sel: POL })) +
+    F('Altura sobre el terreno (m)', `${p}.h`, { min: 0 }) +
+    F('Cable de bajada', `${p}.cable`, { sel: sel(Engine.CABLES) }) +
+    two(F('Largo (m)', `${p}.cableLen`, { vis: `${p}.cable!=none`, min: 0 }), F('dB/100 m', `${p}.cableDb`, { vis: `${p}.cable=custom`, min: 0 })) +
+    F('Conectores y adaptadores (cantidad)', `${p}.conn`, { step: 1, min: 0 });
+}
+
+function buildForm() {
+  const freqBtns = [[150, 'VHF 150'], [433, '433'], [868, '868'], [2400, '2,4 GHz'], [5800, '5,8 GHz'], [18000, '18 GHz'], [38000, '38 GHz'], [80000, '80 GHz']]
+    .map(([f, t]) => `<button type="button" data-f="${f}">${t}</button>`).join('');
+  const link =
+    `<div class="field"><label for="preset">Escenario predefinido</label><select id="preset">${PRESETS.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>` +
+    `<div class="field"><div class="row"><label for="k_f">Frecuencia (MHz)</label><span class="val" id="vBand"></span></div>
+       <input type="number" id="k_f" data-k="f" step="any" min="10"><input type="range" id="slF" min="1" max="5" step="0.005" aria-label="Frecuencia en escala logarítmica">
+       <div class="presets">${freqBtns}</div></div>` +
+    `<div class="field"><div class="row"><label for="k_Pt">Potencia del transmisor (dBm)</label><span class="val" id="vPt"></span></div>
+       <input type="number" id="k_Pt" data-k="Pt" step="any"><input type="range" id="slPt" min="-10" max="70" step="0.5" aria-label="Potencia en dBm"></div>` +
+    `<div class="field"><div class="row"><label for="k_r">Distancia del enlace (km)</label><span class="val" id="vR"></span></div>
+       <input type="number" id="k_r" data-k="r" step="any" min="0.01"><input type="range" id="slR" min="-1" max="2.3" step="0.01" aria-label="Distancia en escala logarítmica"></div>`;
+
+  const obs =
+    `<table class="obs"><thead><tr><th>Nombre</th><th>Pos. km</th><th>Cima m</th><th>R m</th><th></th></tr></thead><tbody id="obsBody"></tbody></table>
+     <button type="button" id="obsAdd" class="wide">＋ Agregar obstáculo</button>
+     <p class="note">Cima: altura sobre el mismo nivel de referencia que el terreno de Tx y Rx. R = radio de curvatura de la cima (0 = filo de cuchillo; un valor mayor modela un cerro redondeado).</p>`;
+
+  const mats = Engine.MATERIALS.map(([id, name, db]) => F(`${name} <small>(${db} dB)</small>`, `mat.${id}`, { step: 1, min: 0 })).join('');
+
+  $('form').innerHTML =
+    sec('1 · Enlace', link) +
+    sec('2 · Antena transmisora', antBlock('tx')) +
+    sec('3 · Antena receptora', antBlock('rx')) +
+    sec('4 · Acoplamiento', two(F('Pérdida por conector (dB)', 'connLoss', { min: 0 }), F('Desalineación de polarización (°)', 'polExtra')) +
+      '<p class="note">La desalineación aplica entre antenas con polarización lineal. Lineal contra circular pierde 3 dB.</p>', false) +
+    sec('5 · Trayecto y obstáculos',
+      F('Considerar la curvatura terrestre', 'earth', { chk: true }) +
+      F('Factor k del radio terrestre', 'k', { vis: 'earth=true', hint: '4/3 ≈ 1,33 es la atmósfera estándar; menos de 1 equivale a subrefracción.' }) +
+      two(F('Terreno en Tx (m)', 'zTx'), F('Terreno en Rx (m)', 'zRx')) +
+      F('Método para varios obstáculos', 'method', { sel: [['dey', 'Deygout'], ['ep', 'Epstein–Peterson'], ['bull', 'Bullington'], ['knife', 'Solo el obstáculo dominante']] }) +
+      obs +
+      F('Perfil de terreno (opcional)', 'terrainTxt', { area: true, rows: 4, ph: 'km, altura en m\n2.5, 35\n5, 80\n7.5, 40', hint: 'Una línea por punto: distancia en km y altura en m. Cada punto se trata como un posible obstáculo.' }) +
+      F('Reflexión en el suelo', 'ground', { sel: [['off', 'No considerar (espacio libre)'], ['two', 'Modelo de dos rayos']] }) +
+      F('Tipo de suelo', 'gType', { sel: sel(Engine.GROUND), vis: 'ground=two' })) +
+    sec('6 · Atmósfera y entorno',
+      F('Incluir absorción de gases (O₂ y vapor de agua)', 'gas', { chk: true }) +
+      F('Vapor de agua (g/m³)', 'rho', { vis: 'gas=true', min: 0 }) +
+      `<div class="field"><label for="k_rain">Intensidad de lluvia (mm/h)</label><input type="number" id="k_rain" data-k="rain" step="any" min="0">
+        <div class="presets"><button type="button" data-rain="0">Sin lluvia</button><button type="button" data-rain="2.5">Ligera</button><button type="button" data-rain="12.5">Moderada</button><button type="button" data-rain="25">Fuerte</button><button type="button" data-rain="50">Tormenta</button><button type="button" data-rain="100">Torrencial</button></div></div>` +
+      two(F('Vegetación en el trayecto (m)', 'vegDepth', { min: 0 }), F('Estación', 'vegSeason', { num: true, sel: [['1', 'Con hojas'], ['0.5', 'Sin hojas (estimado)']] })) +
+      '<p class="label-sm">Penetración de materiales (cantidad)</p>' + `<div class="mats">${mats}</div>` +
+      two(F('Atenuación de campo a<sub>e</sub> (lineal)', 'ae', { min: 1 }), F('Otras pérdidas (dB)', 'extraDb')) +
+      '<p class="note">a<sub>e</sub> = 1 significa sin atenuación extra. En el ejemplo del post vale 4 (6,02 dB).</p>', false) +
+    sec('7 · Receptor y ruido',
+      two(F('Ancho de banda (MHz)', 'B', { min: 0 }), F('Figura de ruido (dB)', 'NF')) +
+      F('Aumento del piso de ruido (dB)', 'noiseRise', { hint: 'Ruido urbano o interferencia externa.' }) +
+      F('Sensibilidad', 'sensMode', { sel: [['manual', 'Valor del fabricante'], ['auto', 'Calcular desde ruido y SNR mínima']] }) +
+      F('Sensibilidad (dBm)', 'sens', { vis: 'sensMode=manual' }) +
+      F('SNR mínima requerida (dB)', 'snrMin', { vis: 'sensMode=auto' }), false) +
+    `<button type="button" id="reset" class="wide">Restablecer ejemplo del post</button>`;
+}
+
+/* ---------- Sincronización estado ↔ formulario ---------- */
+function writeEl(el) {
+  const v = get(S, el.dataset.k);
+  if (el.type === 'checkbox') el.checked = !!v;
+  else el.value = v == null ? '' : v;
+}
+function syncForm() {
+  document.querySelectorAll('[data-k]').forEach(el => { if (el !== document.activeElement) writeEl(el); });
+  buildObstacles(); updateSliders(); applyVis();
+}
+function readEl(el) {
+  const k = el.dataset.k; let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.type === 'number') { v = parseFloat(el.value); if (!Number.isFinite(v)) return false; }
+  else if (el.tagName === 'SELECT' && el.dataset.num) v = parseFloat(el.value);
+  else v = el.value;
+  set(S, k, v); return true;
+}
+function applyVis() {
+  document.querySelectorAll('[data-vis]').forEach(el => {
+    const m = el.dataset.vis.match(/^([\w.]+)(!?=)(.+)$/);
+    if (!m) return;
+    el.style.display = (m[3].split('|').includes(String(get(S, m[1]))) === (m[2] === '=')) ? '' : 'none';
+  });
+}
+function updateSliders() {
+  const set1 = (id, v) => { const el = $(id); if (el && el !== document.activeElement) el.value = v; };
+  set1('slF', Math.log10(Math.max(10, S.f))); set1('slPt', S.Pt); set1('slR', Math.log10(Math.max(0.1, S.r)));
+}
+
+/* ---------- Obstáculos ---------- */
+function buildObstacles() {
+  $('obsBody').innerHTML = S.obstacles.length ? S.obstacles.map((o, i) =>
+    `<tr data-i="${i}"><td><input type="text" data-o="name" value="${esc(o.name)}" aria-label="Nombre"></td>
+     <td><input type="number" data-o="pos" step="any" value="${o.pos}" aria-label="Posición en km"></td>
+     <td><input type="number" data-o="top" step="any" value="${o.top}" aria-label="Altura de la cima en m"></td>
+     <td><input type="number" data-o="R" step="any" min="0" value="${o.R || 0}" aria-label="Radio de curvatura en m"></td>
+     <td><button type="button" data-del="${i}" aria-label="Quitar obstáculo">✕</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="muted">Sin obstáculos definidos.</td></tr>';
+}
+
+/* ---------- Render ---------- */
+const metric = (lbl, big, small, cls) => `<div class="metric"><div class="lbl">${lbl}</div><div class="big ${cls || ''}">${big}</div><div class="small">${small || ''}</div></div>`;
+
+function render() {
+  let R;
+  try { R = Engine.compute(S); } catch (e) { console.error(e); return; }
+  lastR = R;
+  applyVis();
+
+  $('vBand').textContent = R.band + ' · λ ' + (R.lam >= 1 ? R.lam.toFixed(2) + ' m' : (R.lam * 100).toFixed(2) + ' cm');
+  $('vPt').textContent = fmtPower(Math.pow(10, S.Pt / 10) / 1000);
+  $('vR').textContent = fmtF(R.f) + ' · ' + fmtKm(R.rKm);
+  ['tx', 'rx'].forEach(p => {
+    const a = p === 'tx' ? R.txA : R.rxA, c = p === 'tx' ? R.cTx : R.cRx, pl = p === 'tx' ? R.pTx : R.pRx;
+    $(p + 'Info').textContent = 'Ganancia ' + a.G.toFixed(1) + ' dBi' + (a.hpbw ? ' · haz ' + a.hpbw.toFixed(1) + '°' : (S[p].type === 'custom' ? ' · sin ancho de haz definido' : ' · omnidireccional')) + ' · cable y conectores ' + c.toFixed(2) + ' dB' + (pl > 0.005 ? ' · puntería ' + pl.toFixed(2) + ' dB' : '');
+  });
+
+  /* métricas */
+  const crit = R.crit, clear = crit ? -crit.p.h / crit.p.r1 : null;
+  const marginCls = R.margin >= 10 ? 'c-cyan' : R.margin >= 0 ? 'c-amber' : 'c-red';
+  const rangeTxt = R.maxRange == null ? 'Sin alcance' : R.maxRange >= 295 ? '> 300 km' : fmtKm(R.maxRange);
+  $('metrics').innerHTML =
+    metric('Potencia recibida', fx(R.Pr) + ' dBm', fmtPower(R.PrW), 'c-phos') +
+    metric('Pérdidas totales L<sub>t</sub>', fx(R.Lt) + ' dB', 'Factor ' + Math.pow(10, R.Lt / 10).toExponential(2), 'c-red') +
+    metric('Margen de enlace', sg(R.margin, 1) + ' dB', 'Sensibilidad ' + fx(R.sens, 1) + ' dBm · SNR ' + fx(R.snr, 1) + ' dB', marginCls) +
+    metric('Despeje de Fresnel', clear == null ? 'Libre' : (clear > 2 ? '> 200' : Math.round(clear * 100)) + ' %', clear == null ? 'r₁ máx ' + R.r1mid.toFixed(1) + ' m' : 'r₁ en el punto crítico ' + crit.p.r1.toFixed(1) + ' m', clear == null ? 'c-phos' : clear >= 0.6 ? 'c-phos' : clear >= 0 ? 'c-amber' : 'c-red') +
+    metric('EIRP', fx(R.eirpDbm, 1) + ' dBm', fmtPower(R.eirpW) + ' · ERP ' + fx(R.eirpDbm - 2.15, 1) + ' dBm', 'c-amber') +
+    metric('Disponibilidad (Rayleigh)', (R.avail * 100).toFixed(R.avail > 0.9999 ? 4 : 2) + ' %', 'Con el margen actual, sin visión directa', 'c-cyan') +
+    metric('Alcance por balance', rangeTxt, 'Horizonte radioeléctrico ' + fmtKm(R.horizonKm), 'c-amber') +
+    metric('Capacidad teórica', R.cap >= 1 ? R.cap.toFixed(1) + ' Mbit/s' : (R.cap * 1000).toFixed(1) + ' kbit/s', 'Shannon · B = ' + S.B + ' MHz', 'c-phos');
+
+  /* estado y advertencias */
+  let cls, txt;
+  if (clear == null) { cls = 'ok'; txt = 'Sin obstáculos definidos: se asume trayecto despejado.'; }
+  else if (clear >= 0.6) { cls = 'ok'; txt = 'Despeje correcto: el punto crítico (' + crit.e.name + ') deja libre al menos el 60 % de la 1.ª zona de Fresnel (' + Math.round(clear * 100) + ' %).'; }
+  else if (clear >= 0) { cls = 'warn'; txt = 'Despeje insuficiente en ' + crit.e.name + ': hay visión directa pero se invade la zona de Fresnel (despeje ' + Math.round(clear * 100) + ' % de r₁, se recomienda ≥ 60 %).'; }
+  else { cls = 'bad'; txt = 'Visión directa obstruida por ' + crit.e.name + ' (' + Math.abs(crit.p.h).toFixed(1) + ' m por encima de la línea de vista).'; }
+  if (R.margin < 0) { cls = 'bad'; txt += ' Además, la señal recibida queda ' + Math.abs(R.margin).toFixed(1) + ' dB por debajo de la sensibilidad.'; }
+  $('status').className = 'status ' + cls;
+  $('statusText').textContent = txt;
+
+  const W = [];
+  if (R.f >= 55000 && R.f <= 65000) W.push('Entre 55 y 65 GHz la absorción del oxígeno llega a unos 15 dB/km. El modelo interpola en esa banda y subestima el pico.');
+  if (S.ground === 'two' && crit && crit.p.v > -0.78) W.push('El modelo de dos rayos supone trayecto despejado, pero hay obstáculos que lo invaden: el resultado de la reflexión en suelo no es confiable.');
+  if (S.method === 'dey' && R.peaks.filter(e => !e.ground).length >= 3) W.push('Con tres o más obstáculos, Deygout tiende a sobrestimar la pérdida. Compará con los otros métodos en la tabla de abajo.');
+  if (!S.earth && R.rKm > R.horizonKm) W.push('El enlace supera el horizonte radioeléctrico (' + fmtKm(R.horizonKm) + '): activá la curvatura terrestre.');
+  [['Tx', S.tx, R.txA, R.pTx], ['Rx', S.rx, R.rxA, R.pRx]].forEach(([n, s, a]) => { if (a.hpbw && s.point > a.hpbw / 2) W.push('El error de puntería de ' + n + ' supera la mitad del ancho de haz: la aproximación gaussiana deja de ser confiable.'); });
+  if (R.cTx + R.cRx > 6) W.push('Las pérdidas de cable y conectores suman ' + (R.cTx + R.cRx).toFixed(1) + ' dB. Conviene un cable más grueso o el equipo pegado a la antena.');
+  if (R.polL >= 10) W.push('Las polarizaciones están cruzadas: se pierden ' + R.polL.toFixed(0) + ' dB.');
+  if (S.rain > 0 && R.f < 1000) W.push('Por debajo de 1 GHz la lluvia es despreciable y el modelo la ignora.');
+  const outside = (S.obstacles || []).filter(o => !(o.pos > 0 && o.pos < R.rKm)).length;
+  if (outside) W.push(outside + ' obstáculo(s) están fuera del tramo entre Tx y Rx y se ignoran.');
+  $('warns').innerHTML = W.map(w => `<li>${esc(w)}</li>`).join('');
+  $('warns').style.display = W.length ? '' : 'none';
+
+  drawProfile(R); drawSweep(R);
+
+  /* balance */
+  const rows = [], add = (l, v, k, always, unit) => { if (always || Math.abs(v) > 0.005) rows.push(`<tr class="${k}"><td class="k">${l}</td><td>${sg(v)} ${unit || 'dB'}</td></tr>`); };
+  add('Potencia del transmisor', S.Pt, 'pos', true, 'dBm');
+  add('Cable y conectores Tx', -R.cTx, 'neg');
+  add('Ganancia antena Tx', R.txA.G, 'pos', true, 'dBi');
+  add('Error de puntería Tx', -R.pTx, 'neg');
+  add('Pérdida básica en espacio libre (L<sub>bf</sub>)', -R.lbf, 'neg', true);
+  if (S.ground === 'two') add('Efecto de la reflexión en suelo (dos rayos)', R.gGain, R.gGain >= 0 ? 'pos' : 'neg', true);
+  if (S.gas) add('Absorción de gases', -R.gas, 'neg');
+  add('Lluvia', -R.rain, 'neg');
+  add('Vegetación', -R.veg, 'neg');
+  add('Penetración de materiales', -R.mat, 'neg');
+  add('Atenuación manual (a<sub>e</sub> y otras)', -R.Ae, 'neg');
+  if (R.edges.length) add('Difracción por obstáculos y curvatura', -R.diffr, 'neg', true);
+  add('Desadaptación de polarización', -R.polL, 'neg');
+  add('Error de puntería Rx', -R.pRx, 'neg');
+  add('Ganancia antena Rx', R.rxA.G, 'pos', true, 'dBi');
+  add('Cable y conectores Rx', -R.cRx, 'neg');
+  rows.push(`<tr class="total"><td class="k">Potencia recibida (P<sub>r</sub>)</td><td>${fx(R.Pr)} dBm</td></tr>`);
+  rows.push(`<tr><td class="k">Sensibilidad del receptor</td><td>${fx(R.sens)} dBm</td></tr>`);
+  rows.push(`<tr class="${R.margin >= 0 ? 'pos' : 'neg'}"><td class="k">Margen de enlace</td><td>${sg(R.margin)} dB</td></tr>`);
+  $('budget').innerHTML = rows.join('');
+
+  /* obstáculos */
+  const oc = $('obsCard');
+  if (R.edges.length) {
+    oc.style.display = '';
+    const items = [];
+    R.edges.forEach((e, i) => { if (e.manual) items.push([e, R.per[i]]); });
+    if (crit && !crit.e.manual) items.push([crit.e, crit.p]);
+    $('obsTable').innerHTML = '<thead><tr><th>Elemento</th><th>Pos.</th><th>Sobre la LOS</th><th>r₁</th><th>Despeje</th><th>ν</th><th>Pérdida</th></tr></thead><tbody>' +
+      items.map(([e, p]) => `<tr><td class="k">${esc(e.name)}</td><td>${fmtKm(e.x / 1000)}</td><td>${sg(p.h, 1)} m</td><td>${p.r1.toFixed(1)} m</td><td>${-p.h / p.r1 > 2 ? '> 200' : Math.round(-p.h / p.r1 * 100)} %</td><td>${p.v.toFixed(2)}</td><td>${(p.J + p.T).toFixed(1)} dB</td></tr>`).join('') + '</tbody>';
+    const names = { knife: 'Obstáculo dominante (filo de cuchillo)', bull: 'Bullington', ep: 'Epstein–Peterson', dey: 'Deygout' };
+    $('methTable').innerHTML = '<thead><tr><th>Método</th><th>Pérdida</th></tr></thead><tbody>' +
+      ['knife', 'bull', 'ep', 'dey'].map(k => `<tr class="${S.method === k ? 'sel' : ''}"><td class="k">${names[k]}${S.method === k ? ' · en uso' : ''}</td><td>${R.methods[k].toFixed(1)} dB</td></tr>`).join('') + '</tbody>';
+  } else oc.style.display = 'none';
+
+  /* derivados */
+  const dl = [];
+  const di = (k, v) => dl.push(`<div><dt>${k}</dt><dd>${v}</dd></div>`);
+  di('Longitud de onda λ', R.lam.toFixed(R.lam < 1 ? 4 : 3) + ' m');
+  di('Densidad de flujo isótropa φ<sub>ISO</sub>', R.phiIso.toExponential(2) + ' W/m²');
+  di('Apertura equivalente del receptor', R.seqRx.toExponential(2) + ' m²');
+  di('L<sub>bf</sub> con la fórmula práctica', R.lbf2.toFixed(2) + ' dB');
+  di('Radio máximo de la 1.ª zona de Fresnel', R.r1mid.toFixed(2) + ' m');
+  if (R.towerReq != null) di('Altura mínima de torres iguales para 60 % de despeje', Math.max(0, R.towerReq).toFixed(1) + ' m');
+  if (S.gas) di('Absorción gaseosa', R.gasSp.total.toFixed(3) + ' dB/km (O₂ ' + R.gasSp.go.toFixed(3) + ' + H₂O ' + R.gasSp.gw.toFixed(3) + ')');
+  if (S.rain > 0) di('Lluvia ' + S.rain + ' mm/h', R.rainSp.gamma.toFixed(3) + ' dB/km · trayecto efectivo ' + R.rainEff.toFixed(2) + ' km');
+  di('Piso de ruido', fx(R.N, 1) + ' dBm');
+  di('Horizonte radioeléctrico (k = ' + S.k + ')', R.horizonKm.toFixed(1) + ' km');
+  $('derived').innerHTML = dl.join('');
+
+  /* exposición y disponibilidad */
+  $('expo').innerHTML = `<p>Con EIRP de <b>${fmtPower(R.eirpW)}</b>, la distancia mínima en campo lejano es de <b>${R.exp.dg < 10 ? R.exp.dg.toFixed(2) : R.exp.dg.toFixed(1)} m</b> para el público general (límite ${R.exp.sg.toFixed(2)} W/m²) y de <b>${R.exp.dop < 10 ? R.exp.dop.toFixed(2) : R.exp.dop.toFixed(1)} m</b> para exposición ocupacional (límite ${R.exp.so.toFixed(1)} W/m²).</p>
+    <p class="note">Niveles de referencia ICNIRP 1998. Verificá la norma vigente en tu país. A distancias menores que unas pocas longitudes de onda el cálculo de campo lejano no es válido.</p>`;
+  $('avail').innerHTML = '<thead><tr><th>Objetivo</th><th>Margen necesario</th><th>Con el margen actual</th></tr></thead><tbody>' +
+    [[0.99, '99'], [0.999, '99,9'], [0.9999, '99,99'], [0.99999, '99,999']].map(([a, lb]) => { const fm = Engine.fadeMarginFor(a); return `<tr><td class="k">${lb} %</td><td>${fm.toFixed(0)} dB</td><td class="${R.margin >= fm ? 'okc' : 'badc'}">${R.margin >= fm ? 'Cumple' : 'No cumple'}</td></tr>`; }).join('') + '</tbody>';
+}
+
+/* ---------- Gráficos ---------- */
+function setupCanvas(cv) {
+  const rect = cv.getBoundingClientRect();
+  if (!rect.width) return null;
+  let ctx = null;
+  try { ctx = cv.getContext('2d'); } catch (e) { ctx = null; }
+  if (!ctx) return null;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(rect.width * dpr); cv.height = Math.round(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  return { ctx, W: rect.width, H: rect.height };
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+function drawProfile(R) {
+  const c = setupCanvas($('cvProfile')); if (!c) return;
+  const { ctx, W, H } = c, mx = 50, mt = 14, mb = 30, x0 = mx, x1 = W - 16, pw = x1 - x0, ph = H - mt - mb, r = R.r;
+  let ymin = Infinity, ymax = -Infinity;
+  const up = y => { ymin = Math.min(ymin, y); ymax = Math.max(ymax, y); };
+  R.profile.forEach(p => up(p.y)); up(R.Tx.y); up(R.Rx.y);
+  up(Math.min(R.Tx.y, R.Rx.y) - R.r1mid); up(Math.max(R.Tx.y, R.Rx.y) + R.r1mid);
+  R.edges.filter(e => e.manual).forEach(e => up(e.y));
+  const pad = (ymax - ymin) * 0.06 + 1; ymin -= pad; ymax += pad;
+  const X = x => x0 + x / r * pw, Y = y => mt + (ymax - y) / (ymax - ymin) * ph;
+  const gy = x => R.profile[Math.max(0, Math.min(120, Math.round(x / r * 120)))].y;
+  ctx.font = '11px "IBM Plex Mono",monospace';
+
+  /* grilla */
+  const ys = niceStep((ymax - ymin) / 4);
+  ctx.strokeStyle = 'rgba(127,150,138,.14)'; ctx.fillStyle = '#7f968a'; ctx.lineWidth = 1; ctx.textAlign = 'right';
+  for (let v = Math.ceil(ymin / ys) * ys; v <= ymax; v += ys) { ctx.beginPath(); ctx.moveTo(x0, Y(v)); ctx.lineTo(x1, Y(v)); ctx.stroke(); ctx.fillText(Math.round(v) + ' m', x0 - 6, Y(v) + 4); }
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 4; i++) { const km = R.rKm * i / 4; ctx.fillText((km < 10 ? km.toFixed(1) : km.toFixed(0)) + ' km', Math.min(x1 - 16, Math.max(x0 + 16, X(r * i / 4))), H - 10); }
+
+  /* Fresnel */
+  const N = 120, los = x => R.Tx.y + (R.Rx.y - R.Tx.y) * x / r, rho = x => Math.sqrt(R.lam * x * (r - x) / r);
+  const band = k => {
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) { const x = r * i / N; i ? ctx.lineTo(X(x), Y(los(x) + k * rho(x))) : ctx.moveTo(X(x), Y(los(x) + k * rho(x))); }
+    for (let i = N; i >= 0; i--) { const x = r * i / N; ctx.lineTo(X(x), Y(los(x) - k * rho(x))); }
+    ctx.closePath();
+  };
+  band(1); ctx.fillStyle = 'rgba(255,179,71,.10)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,179,71,.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+  band(0.6); ctx.fillStyle = 'rgba(90,240,160,.13)'; ctx.fill(); ctx.strokeStyle = 'rgba(90,240,160,.7)'; ctx.lineWidth = 1; ctx.stroke();
+
+  /* terreno */
+  ctx.beginPath(); ctx.moveTo(X(0), Y(R.profile[0].y));
+  R.profile.forEach(p => ctx.lineTo(X(p.x), Y(p.y)));
+  ctx.lineTo(X(r), mt + ph); ctx.lineTo(X(0), mt + ph); ctx.closePath();
+  ctx.fillStyle = '#16231c'; ctx.fill(); ctx.strokeStyle = 'rgba(159,181,168,.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  /* obstáculos */
+  R.edges.filter(e => e.manual).forEach(e => {
+    const x = X(e.x), base = Y(gy(e.x)), tip = Y(e.y), w = 20;
+    ctx.beginPath(); ctx.moveTo(x - w, base); ctx.lineTo(x, tip); ctx.lineTo(x + w, base); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,107,94,.55)'; ctx.fill(); ctx.strokeStyle = '#ff6b5e'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = '#ff9a90'; ctx.textAlign = 'center'; ctx.fillText(e.name, x, Math.max(11, tip - 6));
+  });
+
+  /* línea de vista y torres */
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = '#5cc8ff'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(X(0), Y(R.Tx.y)); ctx.lineTo(X(r), Y(R.Rx.y)); ctx.stroke(); ctx.setLineDash([]);
+  [[0, R.Tx.y, 'Tx'], [r, R.Rx.y, 'Rx']].forEach(([x, y, l]) => {
+    ctx.strokeStyle = '#9fb5a8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(x), Y(gy(x))); ctx.lineTo(X(x), Y(y)); ctx.stroke();
+    ctx.fillStyle = '#5af0a0'; ctx.beginPath(); ctx.arc(X(x), Y(y), 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#d7e5dc'; ctx.textAlign = x ? 'right' : 'left'; ctx.fillText(l, X(x) + (x ? -8 : 8), Y(y) - 8);
+  });
+}
+
+function drawSweep(R) {
+  const c = setupCanvas($('cvSweep')); if (!c) return;
+  const { ctx, W, H } = c, mx = 54, mt = 14, mb = 30, x0 = mx, x1 = W - 16, pw = x1 - x0, ph = H - mt - mb;
+  const dMin = 0.05, dMax = Math.max(200, S.r * 2), N = 400, lo = Math.log10(dMin), hi = Math.log10(dMax);
+  const pts = [];
+  for (let i = 0; i <= N; i++) { const d = dMin * Math.pow(dMax / dMin, i / N); pts.push([d, R.prAt(d), R.fsAt(d)]); }
+  let top = -Infinity; pts.forEach(p => { top = Math.max(top, p[1], p[2]); });
+  const ymax = Math.ceil((top + 5) / 10) * 10, ymin = Math.min(Math.floor((Math.min(R.sens, R.Pr) - 25) / 10) * 10, ymax - 40);
+  const X = d => x0 + (Math.log10(d) - lo) / (hi - lo) * pw, Y = v => mt + (ymax - v) / (ymax - ymin) * ph;
+  ctx.font = '11px "IBM Plex Mono",monospace';
+  ctx.strokeStyle = 'rgba(127,150,138,.14)'; ctx.fillStyle = '#7f968a'; ctx.lineWidth = 1; ctx.textAlign = 'right';
+  const ys = niceStep((ymax - ymin) / 5);
+  for (let v = Math.ceil(ymin / ys) * ys; v <= ymax; v += ys) { ctx.beginPath(); ctx.moveTo(x0, Y(v)); ctx.lineTo(x1, Y(v)); ctx.stroke(); ctx.fillText(v + '', x0 - 6, Y(v) + 4); }
+  ctx.textAlign = 'center';
+  [0.1, 1, 10, 100].filter(d => d >= dMin && d <= dMax).forEach(d => { ctx.beginPath(); ctx.moveTo(X(d), mt); ctx.lineTo(X(d), mt + ph); ctx.stroke(); ctx.fillText(d + ' km', X(d), H - 10); });
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, mt, pw, ph); ctx.clip();
+  const line = (idx, col, dash, w) => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[idx])) : ctx.moveTo(X(p[0]), Y(p[idx]))); ctx.setLineDash(dash); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke(); ctx.setLineDash([]); };
+  line(2, '#5cc8ff', [5, 4], 1.4); line(1, '#5af0a0', [], 2);
+  const vline = (d, col, dash, label, row) => { if (d < dMin || d > dMax) return; ctx.beginPath(); ctx.moveTo(X(d), mt); ctx.lineTo(X(d), mt + ph); ctx.setLineDash(dash); ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = col; ctx.textAlign = X(d) > x1 - 90 ? 'right' : 'left'; ctx.fillText(label, X(d) + (X(d) > x1 - 90 ? -4 : 4), mt + 12 + row * 14); };
+  vline(S.r, '#ffb347', [], 'r = ' + S.r + ' km', 0);
+  vline(R.horizonKm, '#b794f6', [2, 4], 'horizonte ' + R.horizonKm.toFixed(0) + ' km', 1);
+  if (R.maxRange && R.maxRange < 295) vline(R.maxRange, '#d7e5dc', [2, 3], 'alcance ' + R.maxRange.toFixed(1) + ' km', 2);
+  ctx.beginPath(); ctx.moveTo(x0, Y(R.sens)); ctx.lineTo(x1, Y(R.sens)); ctx.setLineDash([6, 4]); ctx.strokeStyle = '#ff6b5e'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+  ctx.fillStyle = '#ff6b5e'; ctx.textAlign = 'left'; ctx.fillText('sensibilidad ' + fx(R.sens, 0) + ' dBm', x0 + 6, Y(R.sens) - 5);
+  ctx.save(); ctx.translate(12, mt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#7f968a'; ctx.textAlign = 'center'; ctx.fillText('P recibida (dBm)', 0, 0); ctx.restore();
+}
+
+/* ---------- Resumen para copiar ---------- */
+function summaryText() {
+  const R = lastR; if (!R) return '';
+  const L = [];
+  L.push(`Enlace RF · ${fmtF(R.f)} · ${fmtKm(R.rKm)}`);
+  L.push(`Tx: ${fx(S.Pt, 1)} dBm, antena ${R.txA.G.toFixed(1)} dBi (${Engine.ANT[S.tx.type].name}), cable/conectores ${R.cTx.toFixed(2)} dB`);
+  L.push(`Rx: antena ${R.rxA.G.toFixed(1)} dBi (${Engine.ANT[S.rx.type].name}), cable/conectores ${R.cRx.toFixed(2)} dB`);
+  L.push(`Pérdida en espacio libre: ${R.lbf.toFixed(2)} dB`);
+  if (S.gas) L.push(`Gases: ${R.gas.toFixed(2)} dB`);
+  if (S.rain > 0) L.push(`Lluvia (${S.rain} mm/h): ${R.rain.toFixed(2)} dB`);
+  if (R.veg) L.push(`Vegetación: ${R.veg.toFixed(1)} dB`);
+  if (R.mat) L.push(`Materiales: ${R.mat.toFixed(1)} dB`);
+  if (R.edges.length) L.push(`Difracción (${{ knife: 'dominante', bull: 'Bullington', ep: 'Epstein–Peterson', dey: 'Deygout' }[S.method]}): ${R.diffr.toFixed(1)} dB`);
+  L.push(`Pérdidas totales: ${R.Lt.toFixed(2)} dB`);
+  L.push(`Potencia recibida: ${fx(R.Pr)} dBm (${fmtPower(R.PrW)})`);
+  L.push(`Sensibilidad: ${fx(R.sens, 1)} dBm · margen: ${sg(R.margin, 1)} dB · SNR: ${fx(R.snr, 1)} dB`);
+  if (R.crit) L.push(`Despeje de Fresnel en ${R.crit.e.name}: ${Math.round(-R.crit.p.h / R.crit.p.r1 * 100)} % de r1`);
+  L.push(`Disponibilidad Rayleigh: ${(R.avail * 100).toFixed(3)} %`);
+  return L.join('\n');
+}
+
+/* ---------- Eventos ---------- */
+function initEvents() {
+  const form = $('form');
+  const onField = ev => {
+    const el = ev.target;
+    if (el.id === 'preset') { if (ev.type === 'change') { S = presetState(el.value); syncForm(); render(); } return; }
+    if (el.dataset && el.dataset.k) {
+      if (!readEl(el)) return;
+      if (/^(tx|rx)\.type$/.test(el.dataset.k)) { const side = el.dataset.k.slice(0, 2); S[side].pol = Engine.ANT[el.value].pol; syncForm(); }
+      updateSliders(); render(); return;
+    }
+    if (el.id === 'slF') { const v = Math.pow(10, parseFloat(el.value)); S.f = v < 100 ? +v.toFixed(1) : Math.round(v); writeEl($('k_f')); render(); return; }
+    if (el.id === 'slPt') { S.Pt = parseFloat(el.value); writeEl($('k_Pt')); render(); return; }
+    if (el.id === 'slR') { S.r = +Math.pow(10, parseFloat(el.value)).toPrecision(2); writeEl($('k_r')); render(); return; }
+    const row = el.closest && el.closest('tr[data-i]');
+    if (row && el.dataset.o) {
+      const o = S.obstacles[+row.dataset.i];
+      o[el.dataset.o] = el.type === 'number' ? (Number.isFinite(parseFloat(el.value)) ? parseFloat(el.value) : o[el.dataset.o]) : el.value;
+      render();
+    }
+  };
+  form.addEventListener('input', onField);
+  form.addEventListener('change', onField);
+  form.addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.f) { S.f = parseFloat(b.dataset.f); syncForm(); render(); }
+    else if (b.dataset.rain != null) { S.rain = parseFloat(b.dataset.rain); syncForm(); render(); }
+    else if (b.dataset.del != null) { S.obstacles.splice(+b.dataset.del, 1); buildObstacles(); render(); }
+    else if (b.id === 'obsAdd') {
+      const R = lastR || Engine.compute(S);
+      S.obstacles.push({ name: 'Obstáculo ' + (S.obstacles.length + 1), pos: +(S.r / 2).toFixed(2), top: Math.round((R.Tx.y + R.Rx.y) / 2 + 10), R: 0 });
+      buildObstacles(); render();
+    } else if (b.id === 'reset') { S = clone(S0); $('preset').value = 'post'; syncForm(); render(); }
+  });
+  $('btnCopy').addEventListener('click', async () => {
+    const t = summaryText(), b = $('btnCopy'), old = b.textContent;
+    try { await navigator.clipboard.writeText(t); b.textContent = 'Copiado'; }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); b.textContent = 'Copiado'; } catch (e2) { b.textContent = 'No se pudo copiar'; } ta.remove(); }
+    setTimeout(() => { b.textContent = old; }, 1600);
+  });
+  $('btnPrint').addEventListener('click', () => window.print());
+  let rt = null;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => lastR && (drawProfile(lastR), drawSweep(lastR)), 80); });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  buildForm(); initEvents(); syncForm(); render();
+});
+
+</script>
+</body>
+</html>
