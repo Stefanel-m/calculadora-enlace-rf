@@ -2,7 +2,7 @@
 
 Simulador interactivo de enlaces de radiofrecuencia: balance de enlace, antenas, difracción con varios obstáculos, zona de Fresnel, atmósfera, ruido y exposición a RF. Funciona en el navegador, sin instalar nada.
 
-🔗 **Demo:** https://TU-USUARIO.github.io/calculadora-enlace-rf/
+🔗 **Demo:** https://Stefanel-m.github.io/calculadora-enlace-rf/
 
 ![Captura del simulador](captura.png)
 
